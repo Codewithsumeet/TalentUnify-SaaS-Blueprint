@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadcn UI Mock - TalentUnify</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --background: 0 0% 100%;
+            --foreground: 222.2 47.4% 11.2%;
+            --muted: 210 40% 96.1%;
+            --muted-foreground: 215.4 16.3% 46.9%;
+            --popover: 0 0% 100%;
+            --popover-foreground: 222.2 47.4% 11.2%;
+            --border: 214.3 31.8% 91.4%;
+            --input: 214.3 31.8% 91.4%;
+            --card: 0 0% 100%;
+            --card-foreground: 222.2 47.4% 11.2%;
+            --primary: 222.2 47.4% 11.2%;
+            --primary-foreground: 210 40% 98%;
+            --secondary: 210 40% 96.1%;
+            --secondary-foreground: 222.2 47.4% 11.2%;
+            --accent: 210 40% 96.1%;
+            --accent-foreground: 222.2 47.4% 11.2%;
+            --destructive: 0 100% 50%;
+            --destructive-foreground: 210 40% 98%;
+            --ring: 215 20.2% 65.1%;
+            --radius: 0.5rem;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        border: "hsl(var(--border))",
+                        input: "hsl(var(--input))",
+                        ring: "hsl(var(--ring))",
+                        background: "hsl(var(--background))",
+                        foreground: "hsl(var(--foreground))",
+                        primary: {
+                            DEFAULT: "hsl(var(--primary))",
+                            foreground: "hsl(var(--primary-foreground))",
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(var(--secondary))",
+                            foreground: "hsl(var(--secondary-foreground))",
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(var(--destructive))",
+                            foreground: "hsl(var(--destructive-foreground))",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(var(--muted))",
+                            foreground: "hsl(var(--muted-foreground))",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(var(--accent))",
+                            foreground: "hsl(var(--accent-foreground))",
+                        },
+                        popover: {
+                            DEFAULT: "hsl(var(--popover))",
+                            foreground: "hsl(var(--popover-foreground))",
+                        },
+                        card: {
+                            DEFAULT: "hsl(var(--card))",
+                            foreground: "hsl(var(--card-foreground))",
+                        },
+                    },
+                    borderRadius: {
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)",
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-foreground min-h-screen p-8 antialiased font-sans">
+    <div class="max-w-4xl mx-auto space-y-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-3xl font-bold tracking-tight">Candidates</h2>
+                <p class="text-muted-foreground">Manage and search your parsed candidates.</p>
+            </div>
+            <button class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2 hover:cursor-pointer transition">
+                Upload Resume
+            </button>
+        </div>
+
+        <!-- Search / Filter -->
+        <div class="flex items-center space-x-2">
+            <input class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" placeholder="Search for candidates (e.g., 'Senior React Developer')..." type="text">
+            <button class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 hover:cursor-pointer transition">
+                Filter
+            </button>
+        </div>
+
+        <!-- Candidate Cards -->
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <!-- Card 1 -->
+            <div class="rounded-xl border bg-card text-card-foreground shadow">
+                <div class="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+                    <h3 class="tracking-tight text-lg font-semibold">Arjun Mehta</h3>
+                    <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">92% Match</div>
+                </div>
+                <div class="p-6 pt-0">
+                    <p class="text-sm text-muted-foreground pb-4">Mumbai, India • LinkedIn Sim</p>
+                    <div class="flex flex-wrap gap-2">
+                        <div class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold">React</div>
+                        <div class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold">Node.js</div>
+                        <div class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold">TypeScript</div>
+                    </div>
+                </div>
+                <div class="flex items-center p-6 pt-0 space-x-2">
+                     <button class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 w-full hover:cursor-pointer transition">View Profile</button>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="rounded-xl border bg-card text-card-foreground shadow">
+                <div class="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+                    <h3 class="tracking-tight text-lg font-semibold">Priya Sharma</h3>
+                    <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-yellow-600 bg-yellow-100 border-yellow-200">88% Match</div>
+                </div>
+                <div class="p-6 pt-0">
+                    <p class="text-sm text-muted-foreground pb-4">Bengaluru, India • HRMS Mock</p>
+                    <div class="flex flex-wrap gap-2">
+                        <div class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold">Python</div>
+                        <div class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold">Django</div>
+                        <div class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold">PostgreSQL</div>
+                    </div>
+                </div>
+                <div class="flex items-center p-6 pt-0 space-x-2">
+                     <button class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 w-full hover:cursor-pointer transition">View Profile</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,39 @@
+remote: error: GH013: Repository rule violations found for refs/heads/main.        
+remote: 
+remote: - GITHUB PUSH PROTECTION        
+remote:   ΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇö        
+remote:     Resolve the following violations before pushing again        
+remote: 
+remote:     - Push cannot contain secrets        
+remote: 
+remote:             
+remote:      (?) Learn how to resolve a blocked push        
+remote:      https://docs.github.com/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push        
+remote:             
+remote:             
+remote:       ΓÇöΓÇö Google OAuth Client ID ΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇö        
+remote:        locations:        
+remote:          - commit: ba2238a9185b2f2525f030a15bf03a032d1ea1d7        
+remote:            path: .env:17        
+remote:          - commit: ba2238a9185b2f2525f030a15bf03a032d1ea1d7        
+remote:            path: all api and client.txt:1        
+remote:             
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.        
+remote:        https://github.com/Codewithsumeet/TalentUnify-SaaS-Blueprint/security/secret-scanning/unblock-secret/3AtFLVCoVpbyDgIq4pXeElAWfwS        
+remote:             
+remote:             
+remote:       ΓÇöΓÇö Google OAuth Client Secret ΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇö        
+remote:        locations:        
+remote:          - commit: ba2238a9185b2f2525f030a15bf03a032d1ea1d7        
+remote:            path: .env:18        
+remote:          - commit: ba2238a9185b2f2525f030a15bf03a032d1ea1d7        
+remote:            path: all api and client.txt:2        
+remote:             
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.        
+remote:        https://github.com/Codewithsumeet/TalentUnify-SaaS-Blueprint/security/secret-scanning/unblock-secret/3AtFLWS4PokpapEZayNZYKPvlLg        
+remote:             
+remote: 
+remote: 
+To https://github.com/Codewithsumeet/TalentUnify-SaaS-Blueprint.git
+ ! [remote rejected] main -> main (push declined due to repository rule violations)
+error: failed to push some refs to 'https://github.com/Codewithsumeet/TalentUnify-SaaS-Blueprint.git'

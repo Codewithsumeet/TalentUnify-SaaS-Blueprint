@@ -1,0 +1,76 @@
+"""
+FastAPI application factory.
+Creates the app, adds CORS middleware, mounts all routers.
+"""
+from pathlib import Path
+import sys
+from contextlib import asynccontextmanager
+
+backend_dir = Path(__file__).resolve().parent
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+import models  # noqa: F401
+from api.routes import router as main_router
+from api.events import router as events_router
+from auth.router import router as auth_router
+from candidate.router import router as candidate_router
+from integrations.gmail.n8n_bridge import router as gmail_router
+from integrations.hrms_mock import router as hrms_router
+from integrations.linkedin_ingestor import router as linkedin_ingestor_router
+from integrations.linkedin_sim import router as linkedin_router
+from routers.analytics import router as analytics_router
+from routers.calendly import router as calendly_router
+from routers.shortlist import router as shortlist_router
+from resume.router import router as resume_router
+from database import async_engine, Base
+from app.config import get_settings
+
+settings = get_settings()
+cors_origins = settings.cors_origins_list
+allow_credentials = cors_origins != ["*"]
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Create database tables on startup if they don't exist."""
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+
+
+app = FastAPI(
+    title="TalentFlow AI",
+    description="Unified AI-powered recruitment platform — Team Nexus",
+    version="2.1.0",
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins     = cors_origins,
+    allow_credentials = allow_credentials,
+    allow_methods     = ["*"],
+    allow_headers     = ["*"],
+)
+
+app.include_router(main_router)
+app.include_router(events_router)
+app.include_router(gmail_router)
+app.include_router(hrms_router)
+app.include_router(linkedin_ingestor_router)
+app.include_router(linkedin_router)
+app.include_router(shortlist_router)
+app.include_router(analytics_router)
+app.include_router(calendly_router)
+app.include_router(auth_router)
+app.include_router(candidate_router)
+app.include_router(resume_router)
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok", "service": "talentflow-ai", "version": "2.1.0"}

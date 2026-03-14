@@ -1,0 +1,53 @@
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Sensitive project files
+all api and client.txt
+
+# Dependencies
+node_modules/
+jspm_packages/
+venv/
+.venv/
+env/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build/Dist
+dist/
+build/
+.next/
+out/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Runtime/test artifacts
+*.log
+tsc-output.txt
+lint_errors.txt
+.pytest_cache/
+tests/.pytest_cache/
+pytest-cache-files-*/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Agents and temp files
+.agents/
+tmp/
+.gemini/
+.agent/
+_agent/
+_agents/

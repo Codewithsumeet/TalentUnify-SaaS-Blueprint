@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: talentunify
+      POSTGRES_USER: tu_user
+      POSTGRES_PASSWORD: tu_pass
+    ports: 
+      - "5432:5432"
+    volumes: 
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports: 
+      - "6379:6379"
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    env_file: .env
+    depends_on: 
+      - postgres
+      - redis
+    ports: 
+      - "8000:8000"
+
+  celery-worker:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    command: celery -A tasks.celery_app worker --loglevel=info
+    env_file: .env
+    depends_on: 
+      - postgres
+      - redis
+
+  frontend:
+    build: 
+      context: ./talentflow
+      dockerfile: Dockerfile.frontend
+    ports: 
+      - "3000:3000"
+
+volumes:
+  postgres_data:

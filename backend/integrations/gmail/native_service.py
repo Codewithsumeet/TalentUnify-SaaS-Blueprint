@@ -1,0 +1,72 @@
+"""
+Direct Gmail API integration (alternative to n8n).
+Use this if you want TalentFlow to poll Gmail directly without n8n.
+Requires GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET in .env.
+"""
+import base64
+from googleapiclient.discovery import build
+from google.oauth2.credentials import Credentials
+from tasks.resume_tasks import parse_resume_task
+from config import get_settings
+
+settings = get_settings()
+SCOPES   = ["https://www.googleapis.com/auth/gmail.readonly"]
+
+
+def poll_gmail_for_resumes(credentials_dict: dict) -> list[str]:
+    """
+    Polls Gmail for unread emails with PDF or DOCX attachments.
+    credentials_dict: OAuth2 credentials from your auth flow.
+    Returns: list of task_ids for queued parse jobs.
+    """
+    creds   = Credentials(**credentials_dict)
+    service = build("gmail", "v1", credentials=creds)
+
+    query    = "label:Recruitment is:unread has:attachment (filename:pdf OR filename:docx)"
+    messages = service.users().messages().list(userId="me", q=query).execute()
+    task_ids = []
+
+    for msg_stub in (messages.get("messages") or []):
+        msg = service.users().messages().get(
+            userId="me", id=msg_stub["id"], format="full"
+        ).execute()
+
+        for part in (msg.get("payload", {}).get("parts") or []):
+            filename  = part.get("filename", "")
+            mime_type = part.get("mimeType", "")
+
+            is_resume_file = (
+                filename.lower().endswith(".pdf") or
+                filename.lower().endswith(".docx")
+            )
+            if not is_resume_file:
+                continue
+
+            body = part.get("body", {})
+            if "attachmentId" not in body:
+                continue
+
+            attachment = service.users().messages().attachments().get(
+                userId="me",
+                messageId=msg_stub["id"],
+                id=body["attachmentId"],
+            ).execute()
+
+            file_bytes = base64.urlsafe_b64decode(attachment["data"] + "==")
+            task       = parse_resume_task.delay(
+                file_bytes = file_bytes,
+                mime_type  = mime_type,
+                source     = "gmail",
+                filename   = filename,
+                metadata   = {"gmail_message_id": msg_stub["id"]},
+            )
+            task_ids.append(task.id)
+
+        # Mark as read
+        service.users().messages().modify(
+            userId="me",
+            id=msg_stub["id"],
+            body={"removeLabelIds": ["UNREAD"]},
+        ).execute()
+
+    return task_ids

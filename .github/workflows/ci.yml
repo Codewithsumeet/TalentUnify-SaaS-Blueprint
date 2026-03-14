@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  backend:
+    name: Backend — lint + type check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install backend deps
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Syntax check all Python files
+        working-directory: backend
+        run: |
+          find . -name "*.py" -not -path "./.venv/*" | while read f; do
+            python -m py_compile "$f" && echo "✓ $f" || (echo "✗ SYNTAX ERROR: $f" && exit 1)
+          done
+
+      - name: Validate skills_canonical.json
+        working-directory: backend
+        run: python -c "import json; json.load(open('data/skills_canonical.json')); print('JSON valid')"
+
+      - name: Validate DB URL helper
+        working-directory: backend
+        run: |
+          python -c "
+          from db.database import get_sync_db_url
+          url = 'postgresql+asyncpg://u:p@localhost/db'
+          s   = get_sync_db_url(url)
+          assert s == 'postgresql://u:p@localhost/db', f'Got: {s}'
+          print('get_sync_db_url OK')
+          "
+
+      - name: Check FastAPI import chain (no DB connection needed)
+        working-directory: backend
+        env:
+          DATABASE_URL: "postgresql+asyncpg://u:p@localhost/db"
+          REDIS_URL: "redis://localhost:6379/0"
+          CELERY_BROKER_URL: "redis://localhost:6379/0"
+          CELERY_RESULT_BACKEND: "redis://localhost:6379/1"
+          ANTHROPIC_API_KEY: "sk-ant-dummy"
+          OPENAI_API_KEY: "sk-dummy"
+          PINECONE_API_KEY: "dummy"
+          LLAMA_CLOUD_API_KEY: "dummy"
+        run: python -c "from app.main import app; print('FastAPI import OK')"
+
+      - name: Check Celery task import
+        working-directory: backend
+        env:
+          DATABASE_URL: "postgresql+asyncpg://u:p@localhost/db"
+          REDIS_URL: "redis://localhost:6379/0"
+          CELERY_BROKER_URL: "redis://localhost:6379/0"
+          CELERY_RESULT_BACKEND: "redis://localhost:6379/1"
+          ANTHROPIC_API_KEY: "sk-ant-dummy"
+          OPENAI_API_KEY: "sk-dummy"
+          PINECONE_API_KEY: "dummy"
+          LLAMA_CLOUD_API_KEY: "dummy"
+        run: python -c "from app.tasks.resume_tasks import parse_resume; print('Celery task import OK')"
+
+  frontend:
+    name: Frontend — lint + type check + build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: talentflow/package-lock.json
+
+      - name: Install frontend deps
+        working-directory: talentflow
+        run: npm ci
+
+      - name: TypeScript type check
+        working-directory: talentflow
+        run: npx tsc --noEmit
+
+      - name: ESLint
+        working-directory: talentflow
+        run: npx next lint --max-warnings 0
+
+      - name: Next.js build
+        working-directory: talentflow
+        env:
+          NEXT_PUBLIC_API_URL: "http://localhost:8000"
+        run: npx next build
+
+  docker:
+    name: Docker Compose — build check
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker-compose syntax
+        run: docker compose config --quiet && echo "docker-compose.yml valid"
+
+      - name: Build backend image (no cache)
+        run: docker compose build backend --no-cache
+        env:
+          ANTHROPIC_API_KEY: sk-ant-dummy
+          OPENAI_API_KEY: sk-dummy
+          PINECONE_API_KEY: dummy
+          LLAMA_CLOUD_API_KEY: dummy
