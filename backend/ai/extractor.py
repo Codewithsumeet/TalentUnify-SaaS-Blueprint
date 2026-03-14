@@ -8,6 +8,8 @@ Three-tier fallback chain:
 
 Returns: { markdown: str, quality: "high"|"medium"|"low", parser_used: str }
 """
+from __future__ import annotations
+
 import os
 import base64
 import tempfile
