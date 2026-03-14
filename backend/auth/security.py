@@ -8,7 +8,12 @@ from app.config import get_settings
 from app.exceptions import AuthenticationException
 
 settings = get_settings()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    # Use a pure-Python default to avoid runtime failures when bcrypt backend
+    # is unavailable in local/dev environments.
+    schemes=["pbkdf2_sha256", "bcrypt"],
+    deprecated="auto",
+)
 
 
 def hash_password(password: str) -> str:

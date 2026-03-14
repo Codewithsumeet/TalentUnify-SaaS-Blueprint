@@ -26,7 +26,7 @@ async def list_candidates(
     return await service.list_candidates(page=page, size=size, search=search)
 
 
-@router.get("/{candidate_id}", response_model=CandidateResponse)
+@router.get("/{candidate_id:uuid}", response_model=CandidateResponse)
 async def get_candidate(
     candidate_id: UUID,
     _: User = Depends(get_current_user),
@@ -48,7 +48,7 @@ async def create_candidate(
     return await service.create_candidate(payload)
 
 
-@router.patch("/{candidate_id}", response_model=CandidateResponse)
+@router.patch("/{candidate_id:uuid}", response_model=CandidateResponse)
 async def update_candidate(
     candidate_id: UUID,
     payload: CandidateUpdate,

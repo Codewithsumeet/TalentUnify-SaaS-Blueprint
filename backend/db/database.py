@@ -51,7 +51,7 @@ def get_sync_db_url(async_url: str) -> str:
 
 # ── Async engine — FastAPI only ───────────────────────────────────────────────
 
-_async_engine = create_async_engine(
+async_engine = create_async_engine(
     get_async_db_url(settings.database_url),
     echo=False,
     pool_pre_ping=True,
@@ -59,8 +59,11 @@ _async_engine = create_async_engine(
     max_overflow=20,
 )
 
+# Backward-compatible alias for modules that may still import _async_engine.
+_async_engine = async_engine
+
 AsyncSessionLocal = async_sessionmaker(
-    bind=_async_engine,
+    bind=async_engine,
     class_=AsyncSession,
     expire_on_commit=False,
 )

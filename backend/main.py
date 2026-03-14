@@ -14,6 +14,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import models  # noqa: F401
+from db import models as db_models  # noqa: F401
+from db.base import Base as DbBase
+from db.database import async_engine as db_async_engine
+from app.exceptions import register_exception_handlers
+from app.runtime_migrations import ensure_candidate_source_column
 from api.routes import router as main_router
 from api.events import router as events_router
 from auth.router import router as auth_router
@@ -39,6 +44,9 @@ async def lifespan(app: FastAPI):
     """Create database tables on startup if they don't exist."""
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    async with db_async_engine.begin() as conn:
+        await conn.run_sync(DbBase.metadata.create_all)
+        await conn.run_sync(ensure_candidate_source_column)
     yield
 
 
@@ -48,6 +56,7 @@ app = FastAPI(
     version="2.1.0",
     lifespan=lifespan,
 )
+register_exception_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -57,6 +66,9 @@ app.add_middleware(
     allow_headers     = ["*"],
 )
 
+app.include_router(auth_router)
+app.include_router(candidate_router)
+app.include_router(resume_router)
 app.include_router(main_router)
 app.include_router(events_router)
 app.include_router(gmail_router)
@@ -66,9 +78,6 @@ app.include_router(linkedin_router)
 app.include_router(shortlist_router)
 app.include_router(analytics_router)
 app.include_router(calendly_router)
-app.include_router(auth_router)
-app.include_router(candidate_router)
-app.include_router(resume_router)
 
 
 @app.get("/health")
