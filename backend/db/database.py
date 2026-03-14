@@ -36,14 +36,11 @@ def get_async_db_url(db_url: str) -> str:
 
 def get_sync_db_url(async_url: str) -> str:
     """
-    Convert async URL → psycopg (v3) URL for sync contexts.
-    postgresql+asyncpg://... → postgresql+psycopg://...
-    postgresql://...         → postgresql+psycopg://...
+    Convert async URL → sync SQLAlchemy URL for sync contexts.
+    postgresql+asyncpg://... → postgresql://...
     """
     if async_url.startswith("postgresql+asyncpg://"):
-        return async_url.replace("postgresql+asyncpg://", "postgresql+psycopg://", 1)
-    if async_url.startswith("postgresql://"):
-        return async_url.replace("postgresql://", "postgresql+psycopg://", 1)
+        return async_url.replace("postgresql+asyncpg://", "postgresql://", 1)
     if async_url.startswith("sqlite+aiosqlite:///"):
         return async_url.replace("sqlite+aiosqlite:///", "sqlite:///", 1)
     return async_url

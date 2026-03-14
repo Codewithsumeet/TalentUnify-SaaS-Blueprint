@@ -64,3 +64,35 @@ def test_identical_ids_raises_value_error():
     with pytest.raises(ValueError, match="itself"):
         merge_module.merge_candidates("same", "same", MagicMock())
 
+
+def test_merge_combines_sources_and_preserves_primary_fields():
+    merge_module = importlib.import_module("candidate.merge_service")
+    primary = _make_candidate(
+        id="p1",
+        sources=["gmail", "upload"],
+        phone="111-1111",
+        location="Bangalore",
+        all_experience=[{"company": "Acme", "role": "Backend Eng", "duration": "2y"}],
+    )
+    secondary = _make_candidate(
+        id="s1",
+        sources=["upload", "linkedin"],
+        phone="999-9999",
+        location="Mumbai",
+        all_experience=[{"company": "Beta", "role": "Platform Eng", "duration": "1y"}],
+    )
+
+    db = MagicMock()
+    db.execute.return_value.scalar_one_or_none.side_effect = [primary, secondary]
+    db.refresh.return_value = None
+
+    with patch.object(merge_module, "_reindex_candidate_sync", return_value=None), patch.object(
+        merge_module, "normalize_skills", side_effect=lambda values: values
+    ):
+        result = merge_module.merge_candidates("p1", "s1", db)
+
+    assert result["ok"] is True
+    assert set(primary.sources) == {"gmail", "upload", "linkedin"}
+    assert primary.phone == "111-1111"
+    assert primary.location == "Bangalore"
+

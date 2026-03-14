@@ -11,7 +11,11 @@ from contextlib import asynccontextmanager, contextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase
 from sqlalchemy import create_engine
-from config import get_settings
+
+try:
+    from config import get_settings
+except ModuleNotFoundError:  # Allows `from backend.database import ...` imports.
+    from backend.config import get_settings
 
 settings = get_settings()
 
@@ -31,14 +35,11 @@ def get_async_db_url(db_url: str) -> str:
 
 def get_sync_db_url(async_url: str) -> str:
     """
-    Converts async URL to psycopg (v3) URL for sync Celery tasks.
-    postgresql+asyncpg://... → postgresql+psycopg://...
-    postgresql://... → postgresql+psycopg://...
+    Converts async URL to a sync SQLAlchemy URL for Celery/Alembic tasks.
+    postgresql+asyncpg://... → postgresql://...
     """
     if async_url.startswith("postgresql+asyncpg://"):
-        return async_url.replace("postgresql+asyncpg://", "postgresql+psycopg://", 1)
-    if async_url.startswith("postgresql://"):
-        return async_url.replace("postgresql://", "postgresql+psycopg://", 1)
+        return async_url.replace("postgresql+asyncpg://", "postgresql://", 1)
     if async_url.startswith("sqlite+aiosqlite:///"):
         return async_url.replace("sqlite+aiosqlite:///", "sqlite:///", 1)
     return async_url
