@@ -11,18 +11,31 @@ while the model is actually local/384). The model name never lies.
 """
 import os
 from functools import lru_cache
+from types import SimpleNamespace
+from typing import Any
 
-from pinecone import Pinecone, ServerlessSpec
+try:
+    from pinecone import Pinecone, ServerlessSpec
+except ModuleNotFoundError:
+    Pinecone = None
+    ServerlessSpec = None
 
 from config import get_settings
 
 settings = get_settings()
 
-_pc_instance: Pinecone | None = None
+_pc_instance: Any | None = None
+_EMPTY_QUERY_RESULT = SimpleNamespace(matches=[])
 
 
-def _get_pc() -> Pinecone:
+def _pinecone_available() -> bool:
+    return Pinecone is not None and ServerlessSpec is not None and bool(settings.pinecone_api_key)
+
+
+def _get_pc() -> Any | None:
     global _pc_instance
+    if not _pinecone_available():
+        return None
     if _pc_instance is None:
         _pc_instance = Pinecone(api_key=settings.pinecone_api_key)
     return _pc_instance
@@ -50,7 +63,11 @@ def active_dim() -> int:
 
 def _ensure_index(name: str, dim: int) -> None:
     """Creates the Pinecone index if it doesn't already exist."""
-    pc       = _get_pc()
+    if not _pinecone_available():
+        return
+    pc = _get_pc()
+    if pc is None:
+        return
     existing = [idx.name for idx in pc.list_indexes()]
     if name not in existing:
         pc.create_index(
@@ -63,11 +80,16 @@ def _ensure_index(name: str, dim: int) -> None:
 
 @lru_cache(maxsize=2)
 def _get_index(name: str):
-    return _get_pc().Index(name)
+    pc = _get_pc()
+    if pc is None:
+        return None
+    return pc.Index(name)
 
 
 def _resolve(index_name: str | None):
     """Resolve None → active index, ensure it exists, return Index object."""
+    if not _pinecone_available():
+        return None
     name = index_name or active_index()
     dim  = active_dim()
     _ensure_index(name, dim)
@@ -81,7 +103,10 @@ async def upsert(
     index_name:   str | None = None,
 ) -> None:
     """Upsert a single candidate vector."""
-    _resolve(index_name).upsert(vectors=[{
+    index = _resolve(index_name)
+    if index is None:
+        return
+    index.upsert(vectors=[{
         "id":       str(candidate_id),
         "values":   embedding,
         "metadata": metadata,
@@ -95,7 +120,10 @@ async def query(
     index_name: str | None   = None,
 ):
     """ANN search. Returns raw Pinecone QueryResponse."""
-    return _resolve(index_name).query(
+    index = _resolve(index_name)
+    if index is None:
+        return _EMPTY_QUERY_RESULT
+    return index.query(
         vector=vector,
         top_k=top_k,
         include_metadata=True,
@@ -108,7 +136,10 @@ async def delete(
     index_name:   str | None = None,
 ) -> None:
     """Delete a candidate vector from the index."""
-    _resolve(index_name).delete(ids=[str(candidate_id)])
+    index = _resolve(index_name)
+    if index is None:
+        return
+    index.delete(ids=[str(candidate_id)])
 
 
 async def upsert_candidate(candidate_id: str, embedding: list[float], metadata: dict, index_name: str | None = None) -> None:

@@ -26,8 +26,14 @@ FALLBACK_EVENT_TYPES = [
 
 
 def _mock_mode_enabled() -> bool:
-    explicit = (getattr(settings, "calendly_mock_mode", "") or "").strip().lower()
-    if explicit in {"1", "true", "yes", "on"}:
+    raw_value = getattr(settings, "calendly_mock_mode", "")
+    if isinstance(raw_value, bool):
+        explicit_enabled = raw_value
+    else:
+        explicit = str(raw_value or "").strip().lower()
+        explicit_enabled = explicit in {"1", "true", "yes", "on"}
+
+    if explicit_enabled:
         return True
     return not bool(getattr(settings, "calendly_personal_access_token", ""))
 
