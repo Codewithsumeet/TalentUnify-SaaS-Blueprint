@@ -1,0 +1,20 @@
+
+import asyncio
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import text
+
+async def test_db():
+    print("Connecting to DB...")
+    engine = create_async_engine("postgresql+asyncpg://tu_user:tu_pass@localhost:5432/talentunify")
+    try:
+        async with engine.connect() as conn:
+            print("Connected! Running query...")
+            result = await conn.execute(text("SELECT 1"))
+            print(f"Result: {result.scalar()}")
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        await engine.dispose()
+
+if __name__ == "__main__":
+    asyncio.run(test_db())

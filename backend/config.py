@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,7 +19,11 @@ def _resolve_env_file() -> str:
 
 class Settings(BaseSettings):
     # Parsing
-    llama_cloud_api_key: str = ""
+    llama_cloud_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("LLAMA_CLOUD_API_KEY", "LLAMAPARSE_API_KEY"),
+    )
+    llama_pipeline_id: str = Field(default="", validation_alias=AliasChoices("LLAMA_PIPELINE_ID"))
 
     # LLM
     anthropic_api_key: str = ""
@@ -29,9 +34,12 @@ class Settings(BaseSettings):
     embedding_dim: int = 1536
 
     # Pinecone — two separate indexes for different embedding dimensions
-    pinecone_api_key: str = ""
+    pinecone_api_key: str = Field(default="", validation_alias=AliasChoices("PINECONE_API_KEY"))
     pinecone_env: str = "us-east-1"
-    pinecone_index_main: str = "candidates"       # 1536-dim (OpenAI)
+    pinecone_index_main: str = Field(
+        default="candidates",
+        validation_alias=AliasChoices("PINECONE_INDEX_MAIN", "PINECONE_INDEX_NAME", "PINECONE_INDEX"),
+    )       # 1536-dim (OpenAI)
     pinecone_index_local: str = "candidates-local"  # 384-dim (MiniLM)
 
     # Task Queue
@@ -53,6 +61,20 @@ class Settings(BaseSettings):
     calendly_organization_uri: str = ""
     calendly_user_uri: str = ""
     calendly_mock_mode: bool = True
+    calendly_client_id: str = ""
+    calendly_client_secret: str = ""
+    calendly_redirect_uri: str = "http://localhost:8000/api/v1/integration/calendly/callback"
+    calendly_webhook_secret: str = ""
+
+    # Frontend
+    frontend_url: str = "http://localhost:3000"
+
+    # Gmail scan heuristics
+    gmail_resume_threshold: float = 2.5
+
+    # BambooHR
+    bamboo_api_key: str = Field(default="", validation_alias=AliasChoices("BAMBOO_API_KEY"))
+    bamboo_domain: str = Field(default="", validation_alias=AliasChoices("BAMBOO_DOMAIN"))
 
     # Demo
     demo_mode: bool = False

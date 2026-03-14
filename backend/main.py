@@ -22,7 +22,6 @@ from app.runtime_migrations import ensure_candidate_source_column
 from api.routes import router as main_router
 from api.events import router as events_router
 from auth.router import router as auth_router
-from candidate.router import router as candidate_router
 from integrations.gmail.n8n_bridge import router as gmail_router
 from integrations.hrms_mock import router as hrms_router
 from integrations.linkedin_ingestor import router as linkedin_ingestor_router
@@ -35,8 +34,12 @@ from database import async_engine, Base
 from app.config import get_settings
 
 settings = get_settings()
-cors_origins = settings.cors_origins_list
-allow_credentials = cors_origins != ["*"]
+configured_cors_origins = settings.cors_origins_list
+if configured_cors_origins == ["*"]:
+    cors_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+else:
+    cors_origins = configured_cors_origins
+allow_credentials = True
 
 
 @asynccontextmanager
@@ -47,7 +50,11 @@ async def lifespan(app: FastAPI):
     async with db_async_engine.begin() as conn:
         await conn.run_sync(DbBase.metadata.create_all)
         await conn.run_sync(ensure_candidate_source_column)
-    yield
+    try:
+        yield
+    finally:
+        await async_engine.dispose()
+        await db_async_engine.dispose()
 
 
 app = FastAPI(
@@ -67,9 +74,8 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
-app.include_router(candidate_router)
-app.include_router(resume_router)
 app.include_router(main_router)
+app.include_router(resume_router)
 app.include_router(events_router)
 app.include_router(gmail_router)
 app.include_router(hrms_router)

@@ -1,6 +1,8 @@
 # 📚 COMPLETE DELIVERABLES SUMMARY
 ## All Files, Corrections, and Implementation Guides
 
+> Documentation files are now organized under `docs/`. Start at `docs/README.md` for the updated structure.
+
 ---
 
 ## 📦 WHAT YOU'VE RECEIVED

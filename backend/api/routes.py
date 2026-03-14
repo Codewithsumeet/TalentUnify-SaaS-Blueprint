@@ -10,19 +10,22 @@ DELETE /api/v1/candidates/{id}      — delete candidate
 """
 import uuid
 import json
+import logging
 import re
 from collections import Counter
 from urllib.parse import parse_qs, urlparse
 
 import httpx
 import sqlalchemy as sa
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query
+from fastapi import APIRouter, UploadFile, File, HTTPException, Query, BackgroundTasks, Depends
 from pydantic import BaseModel
 
+from app.dependencies import get_current_user
 from config import get_settings
 
 router   = APIRouter(prefix="/api/v1")
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 ALLOWED_MIME = {
     "application/pdf",
@@ -81,7 +84,7 @@ def _normalize_source_label(raw_source: str | None) -> str:
 
 
 # ── File Upload ────────────────────────────────────────────────────────────────
-@router.post("/candidates/upload")
+@router.post("/candidates/upload", dependencies=[Depends(get_current_user)])
 async def upload_resume(file: UploadFile = File(...)):
     """
     Upload a resume PDF or DOCX.
@@ -215,7 +218,7 @@ class CandidateNoteRequest(BaseModel):
     author: str = "Recruiter"
 
 
-@router.post("/search")
+@router.post("/search", dependencies=[Depends(get_current_user)])
 async def search_candidates(req: SearchRequest):
     """
     Natural language semantic search.
@@ -233,7 +236,7 @@ async def search_candidates(req: SearchRequest):
 
 
 # ── Candidate List ─────────────────────────────────────────────────────────────
-@router.get("/candidates/")
+@router.get("/candidates", dependencies=[Depends(get_current_user)])
 async def list_candidates(
     page:     int   = Query(1, ge=1),
     per_page: int   = Query(20, ge=1, le=100),
@@ -341,7 +344,7 @@ async def get_sidebar_summary():
     }
 
 
-@router.post("/candidates/merge")
+@router.post("/candidates/merge", dependencies=[Depends(get_current_user)])
 async def merge_candidates_endpoint(req: MergeRequest):
     from candidate.merge_service import merge_candidates_async
     from database import get_db
@@ -356,8 +359,17 @@ async def merge_candidates_endpoint(req: MergeRequest):
     return result
 
 
-@router.patch("/candidates/{candidate_id}/stage")
-async def update_candidate_stage(candidate_id: str, req: CandidateStageRequest):
+async def _sync_candidate_to_bamboohr(candidate_payload: dict) -> None:
+    from integrations.bamboohr_service import push_candidate_to_bamboohr
+
+    try:
+        await push_candidate_to_bamboohr(candidate_payload)
+    except Exception:
+        logger.exception("BambooHR sync failed for candidate=%s", candidate_payload.get("id"))
+
+
+@router.patch("/candidates/{candidate_id}/stage", dependencies=[Depends(get_current_user)])
+async def update_candidate_stage(candidate_id: str, req: CandidateStageRequest, background_tasks: BackgroundTasks):
     from database import get_db
     from models.candidate import Candidate
 
@@ -382,6 +394,21 @@ async def update_candidate_stage(candidate_id: str, req: CandidateStageRequest):
         await db.flush()
         await db.refresh(candidate)
 
+        if normalized_stage == "hired":
+            background_tasks.add_task(
+                _sync_candidate_to_bamboohr,
+                {
+                    "id": str(candidate.id),
+                    "name": candidate.name,
+                    "email": candidate.email,
+                    "current_role": candidate.current_role,
+                    "location": candidate.location,
+                    "experience_level": candidate.experience_level,
+                    "status": candidate.status,
+                    "pipeline_stage": candidate.pipeline_stage,
+                },
+            )
+
     return {
         "candidate_id": str(candidate.id),
         "pipeline_stage": candidate.pipeline_stage,
@@ -389,7 +416,7 @@ async def update_candidate_stage(candidate_id: str, req: CandidateStageRequest):
     }
 
 
-@router.get("/candidates/{candidate_id}/notes")
+@router.get("/candidates/{candidate_id}/notes", dependencies=[Depends(get_current_user)])
 async def list_candidate_notes(candidate_id: str):
     from database import get_db
     from models.candidate import Candidate
@@ -425,7 +452,7 @@ async def list_candidate_notes(candidate_id: str):
     }
 
 
-@router.post("/candidates/{candidate_id}/notes")
+@router.post("/candidates/{candidate_id}/notes", dependencies=[Depends(get_current_user)])
 async def add_candidate_note(candidate_id: str, req: CandidateNoteRequest):
     from database import get_db
     from models.candidate import Candidate
@@ -494,7 +521,7 @@ async def list_inbound_feed(limit: int = Query(20, ge=1, le=100)):
 
 
 # ── Candidate Detail ───────────────────────────────────────────────────────────
-@router.get("/candidates/{candidate_id}")
+@router.get("/candidates/{candidate_id}", dependencies=[Depends(get_current_user)])
 async def get_candidate(candidate_id: str):
     """Full candidate profile including all parsed fields."""
     from database import get_db
@@ -514,7 +541,7 @@ async def get_candidate(candidate_id: str):
 
 
 # ── Delete Candidate ───────────────────────────────────────────────────────────
-@router.delete("/candidates/{candidate_id}")
+@router.delete("/candidates/{candidate_id}", dependencies=[Depends(get_current_user)])
 async def delete_candidate(candidate_id: str):
     """Delete candidate from PostgreSQL and Pinecone."""
     from database import get_db
@@ -543,7 +570,7 @@ class AISummaryRequest(BaseModel):
     query:        str
 
 
-@router.post("/candidates/ai-summary")
+@router.post("/candidates/ai-summary", dependencies=[Depends(get_current_user)])
 async def generate_ai_summary(req: AISummaryRequest):
     """
     Generates ai_summary text for the Why-This-Match popover.

@@ -11,6 +11,44 @@ from config import get_settings
 
 settings = get_settings()
 SCOPES   = ["https://www.googleapis.com/auth/gmail.readonly"]
+RESUME_KEYWORDS = (
+    "resume",
+    "cv",
+    "curriculum vitae",
+    "application",
+    "job",
+    "hiring",
+    "candidate",
+    "profile",
+    "experience",
+)
+
+
+def _keyword_score(text: str) -> float:
+    value = (text or "").lower()
+    hits = sum(1 for keyword in RESUME_KEYWORDS if keyword in value)
+    if hits >= 4:
+        return 2.0
+    if hits == 3:
+        return 1.5
+    if hits == 2:
+        return 1.0
+    if hits == 1:
+        return 0.5
+    return 0.0
+
+
+def _resume_threshold_score(subject: str, snippet: str, filename: str, mime_type: str) -> float:
+    score = _keyword_score(subject) + _keyword_score(snippet)
+    lower_name = (filename or "").lower()
+    lower_mime = (mime_type or "").lower()
+    if lower_name.endswith(".pdf") or "pdf" in lower_mime:
+        score += 1.0
+    if lower_name.endswith(".docx") or "wordprocessingml.document" in lower_mime:
+        score += 1.0
+    if "resume" in lower_name or "cv" in lower_name:
+        score += 0.5
+    return round(score, 2)
 
 
 def poll_gmail_for_resumes(credentials_dict: dict) -> list[str]:
@@ -30,6 +68,10 @@ def poll_gmail_for_resumes(credentials_dict: dict) -> list[str]:
         msg = service.users().messages().get(
             userId="me", id=msg_stub["id"], format="full"
         ).execute()
+        headers = msg.get("payload", {}).get("headers", []) or []
+        header_map = {str(item.get("name", "")).lower(): str(item.get("value", "")) for item in headers}
+        subject = header_map.get("subject", "")
+        snippet = str(msg.get("snippet") or "")
 
         for part in (msg.get("payload", {}).get("parts") or []):
             filename  = part.get("filename", "")
@@ -40,6 +82,10 @@ def poll_gmail_for_resumes(credentials_dict: dict) -> list[str]:
                 filename.lower().endswith(".docx")
             )
             if not is_resume_file:
+                continue
+
+            threshold_score = _resume_threshold_score(subject, snippet, filename, mime_type)
+            if threshold_score < float(settings.gmail_resume_threshold):
                 continue
 
             body = part.get("body", {})
@@ -58,7 +104,11 @@ def poll_gmail_for_resumes(credentials_dict: dict) -> list[str]:
                 mime_type  = mime_type,
                 source     = "gmail",
                 filename   = filename,
-                metadata   = {"gmail_message_id": msg_stub["id"]},
+                metadata   = {
+                    "gmail_message_id": msg_stub["id"],
+                    "threshold_score": threshold_score,
+                    "subject": subject,
+                },
             )
             task_ids.append(task.id)
 

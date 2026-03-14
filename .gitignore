@@ -7,6 +7,8 @@
 
 # Sensitive project files
 all api and client.txt
+local/
+backend/credentials.json
 
 # Dependencies
 node_modules/
